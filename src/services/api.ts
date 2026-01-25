@@ -47,7 +47,7 @@ const apiClient: AxiosInstance = axios.create({
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INTERCEPTOR DE REQUEST
-// Agrega el token de autenticación a cada petición
+// Agrega el token de autenticación y transforma camelCase a snake_case
 // ═══════════════════════════════════════════════════════════════════════════
 
 apiClient.interceptors.request.use(
@@ -62,9 +62,17 @@ apiClient.interceptors.request.use(
       console.error('Error obteniendo token:', error);
     }
 
+    // Transformar body de camelCase a snake_case
+    if (requestConfig.data && typeof requestConfig.data === 'object') {
+      requestConfig.data = transformRequest(requestConfig.data);
+    }
+
     // Log para debugging
     if (config.DEBUG) {
       console.log(`🚀 API Request: ${requestConfig.method?.toUpperCase()} ${requestConfig.url}`);
+      if (requestConfig.data) {
+        console.log('📦 Request data:', JSON.stringify(requestConfig.data, null, 2));
+      }
     }
 
     return requestConfig;
