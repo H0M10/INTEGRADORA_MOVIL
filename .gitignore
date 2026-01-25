@@ -32,6 +32,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +40,23 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 🔐 ARCHIVOS SENSIBLES - NUNCA SUBIR A GIT
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Google Services (Firebase)
+google-services.json
+GoogleService-Info.plist
+
+# Google Play Service Account
+google-play-service-account.json
+*.keystore
+
+# Credenciales de EAS
+eas-credentials.json
+
+# Cualquier archivo de secretos
+secrets/
+*.secret
+*.credentials

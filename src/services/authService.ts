@@ -127,7 +127,7 @@ export const authService = {
     }
     
     const response = await api.post<ApiResponse<TokenResponse>>(
-      '/auth/refresh-token',
+      '/auth/refresh',
       { refreshToken }
     );
     

@@ -1,20 +1,25 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // NOVAGUARDIAN - Configuración de la API
-// Variables de entorno y configuración base
+// Variables de entorno y configuración base para PRODUCCIÓN
 // ═══════════════════════════════════════════════════════════════════════════
 
 import Constants from 'expo-constants';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ⚠️ VARIABLE GLOBAL DE IP - CAMBIAR AQUÍ CUANDO CAMBIE TU RED ⚠️
+// 🚀 CONFIGURACIÓN DE PRODUCCIÓN - RAILWAY
 // ═══════════════════════════════════════════════════════════════════════════
-// Para obtener tu IP: En terminal ejecuta "ipconfig" y busca "IPv4"
+// Backend desplegado en Railway
+const RAILWAY_URL = 'backend-production-2148.up.railway.app';
+const RAILWAY_PORT = '8080'; // Puerto de Railway
+
+// Para desarrollo local (comentar en producción)
 const LOCAL_IP = '10.13.0.8';
 const LOCAL_PORT = '8002';
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Determinar el entorno
-const ENV = Constants.expoConfig?.extra?.env || 'development';
+// Determinar el entorno - Por defecto PRODUCTION para Play Store
+// Cambia a 'development' para pruebas locales
+const ENV = Constants.expoConfig?.extra?.env || 'production';
 
 // Configuraciones por entorno
 const environments = {
@@ -25,14 +30,14 @@ const environments = {
     DEBUG: true,
   },
   staging: {
-    API_BASE_URL: 'https://staging-api.novaguardian.com/api/v1',
-    WS_URL: 'wss://staging-api.novaguardian.com/ws',
+    API_BASE_URL: `https://${RAILWAY_URL}/api/v1`,
+    WS_URL: `wss://${RAILWAY_URL}/ws`,
     AWS_REGION: 'us-east-1',
     DEBUG: true,
   },
   production: {
-    API_BASE_URL: 'https://api.novaguardian.com/api/v1',
-    WS_URL: 'wss://api.novaguardian.com/ws',
+    API_BASE_URL: `https://${RAILWAY_URL}/api/v1`,
+    WS_URL: `wss://${RAILWAY_URL}/ws`,
     AWS_REGION: 'us-east-1',
     DEBUG: false,
   },

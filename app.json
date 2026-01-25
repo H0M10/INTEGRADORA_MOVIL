@@ -15,10 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.novaguardian.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "NovaGuardian necesita acceso a tu ubicación para mostrar la ubicación de tus seres queridos.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "NovaGuardian necesita acceso a tu ubicación para mostrar la ubicación de tus seres queridos.",
-        "NSCameraUsageDescription": "NovaGuardian necesita acceso a la cámara para escanear códigos QR.",
+        "NSLocationWhenInUseUsageDescription": "NovaGuardian necesita acceso a tu ubicación para mostrar la ubicación de tus seres queridos en tiempo real.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "NovaGuardian necesita acceso a tu ubicación para rastrear la ubicación de tus seres queridos incluso cuando la app está en segundo plano.",
+        "NSCameraUsageDescription": "NovaGuardian necesita acceso a la cámara para escanear códigos QR de dispositivos.",
         "UIBackgroundModes": ["location", "fetch", "remote-notification"]
       }
     },
@@ -28,16 +29,21 @@
         "backgroundColor": "#1E3A5F"
       },
       "package": "com.novaguardian.app",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "CAMERA",
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "VIBRATE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "WAKE_LOCK"
       ],
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,20 +53,33 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#1E3A5F"
+          "color": "#1E3A5F",
+          "sounds": ["./assets/sounds/alert.wav"]
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "NovaGuardian necesita acceso a tu ubicación."
+          "locationAlwaysAndWhenInUsePermission": "NovaGuardian necesita acceso a tu ubicación para monitorear a tus seres queridos.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ]
     ],
     "extra": {
+      "env": "production",
+      "apiUrl": "https://backend-production-2148.up.railway.app/api/v1",
       "eas": {
         "projectId": "your-project-id"
       }
-    }
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/your-project-id"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "owner": "novaguardian"
   }
 }

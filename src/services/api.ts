@@ -7,6 +7,34 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 import * as SecureStore from 'expo-secure-store';
 import { config } from '../config';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILIDADES DE TRANSFORMACIÓN snake_case <-> camelCase
+// ═══════════════════════════════════════════════════════════════════════════
+
+const snakeToCamel = (str: string): string =>
+  str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+
+const camelToSnake = (str: string): string =>
+  str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
+const transformKeys = (obj: any, transformer: (key: string) => string): any => {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(item => transformKeys(item, transformer));
+  if (typeof obj !== 'object') return obj;
+  
+  return Object.keys(obj).reduce((acc, key) => {
+    const newKey = transformer(key);
+    acc[newKey] = transformKeys(obj[key], transformer);
+    return acc;
+  }, {} as any);
+};
+
+// Transformar respuesta de snake_case a camelCase
+const transformResponse = (data: any): any => transformKeys(data, snakeToCamel);
+
+// Transformar request de camelCase a snake_case
+const transformRequest = (data: any): any => transformKeys(data, camelToSnake);
+
 // Crear instancia de Axios
 const apiClient: AxiosInstance = axios.create({
   baseURL: config.API_BASE_URL,
@@ -48,11 +76,16 @@ apiClient.interceptors.request.use(
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INTERCEPTOR DE RESPONSE
-// Maneja respuestas y errores globalmente
+// Maneja respuestas y errores globalmente - Transforma snake_case a camelCase
 // ═══════════════════════════════════════════════════════════════════════════
 
 apiClient.interceptors.response.use(
   (response) => {
+    // Transformar respuesta de snake_case a camelCase
+    if (response.data) {
+      response.data = transformResponse(response.data);
+    }
+    
     // Log para debugging
     if (config.DEBUG) {
       console.log(`✅ API Response: ${response.config.url} - Status: ${response.status}`);
@@ -77,7 +110,7 @@ apiClient.interceptors.response.use(
         
         if (refreshToken) {
           // Intentar refrescar el token
-          const response = await axios.post(`${config.API_BASE_URL}/auth/refresh-token`, {
+          const response = await axios.post(`${config.API_BASE_URL}/auth/refresh`, {
             refreshToken,
           });
 

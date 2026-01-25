@@ -18,7 +18,8 @@ import {
 interface AlertFilters {
   deviceId?: string;
   severity?: 'info' | 'warning' | 'critical';
-  isAttended?: boolean;
+  isResolved?: boolean;
+  isRead?: boolean;
   startDate?: string;
   endDate?: string;
   page?: number;
@@ -116,7 +117,15 @@ export const alertService = {
    */
   getPendingCount: async (): Promise<number> => {
     const response = await api.get<ApiResponse<{ count: number }>>('/alerts/pending-count');
-    return response.data.data.count;
+    return response.data.data.count || 0;
+  },
+
+  /**
+   * Obtener conteo de alertas no leídas
+   */
+  getUnreadCount: async (): Promise<number> => {
+    const response = await api.get<ApiResponse<{ count: number }>>('/alerts/unread/count');
+    return response.data.data.count || 0;
   },
 
   /**
@@ -142,6 +151,17 @@ export const alertService = {
    */
   getCriticalUnattended: async (): Promise<Alert[]> => {
     const response = await api.get<ApiResponse<Alert[]>>('/alerts/critical-unattended');
+    return response.data.data;
+  },
+
+  /**
+   * Resolver/cerrar una alerta
+   */
+  resolveAlert: async (alertId: string, notes?: string): Promise<Alert> => {
+    const response = await api.put<ApiResponse<Alert>>(
+      `/alerts/${alertId}/resolve`,
+      { notes }
+    );
     return response.data.data;
   },
 };

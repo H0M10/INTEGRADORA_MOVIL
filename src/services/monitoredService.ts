@@ -154,11 +154,21 @@ export const monitoredService = {
   // =========================================================================
 
   /**
+   * Obtener medicamentos de una persona
+   */
+  getMedications: async (monitoredId: string): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(
+      `/monitored/${monitoredId}/medications`
+    );
+    return response.data.data;
+  },
+
+  /**
    * Agregar medicamento
    */
   addMedication: async (
     monitoredId: string, 
-    data: { name: string; dosage: string; frequency?: string; notes?: string }
+    data: { name: string; dosage?: string; frequency?: string; notes?: string }
   ): Promise<any> => {
     const response = await api.post<ApiResponse<any>>(
       `/monitored/${monitoredId}/medications`,

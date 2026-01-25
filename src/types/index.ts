@@ -225,7 +225,7 @@ export interface Alert {
   alertType: AlertType;
   title: string;
   message: string;
-  alertTypeName: string;
+  alertTypeName?: string;
   severity: AlertSeverity;
   value?: number;
   latitude?: number;
@@ -233,9 +233,11 @@ export interface Alert {
   address?: string;
   isRead: boolean;
   isDismissed: boolean;
-  isAttended: boolean;
-  attendedAt?: string;
+  isResolved: boolean;            // Estado de resolución
+  resolvedAt?: string;            // Fecha de resolución
+  resolvedBy?: string;            // Usuario que resolvió
   isFalseAlarm: boolean;
+  falseAlarmNotes?: string;       // Notas de falsa alarma
   notes?: string;
   createdAt: string;
   timestamp?: string;              // Alias para createdAt
@@ -249,9 +251,10 @@ export interface AlertStats {
   critical: number;
   warning: number;
   info: number;
-  attended: number;
+  resolved: number;
   pending: number;
   unread: number;
+  falseAlarms: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
