@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "771402857123",
+    "project_id": "novaguardian-587c2",
+    "storage_bucket": "novaguardian-587c2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:771402857123:android:e9c20014167611f66f9d16",
+        "android_client_info": {
+          "package_name": "com.novaguardian.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBa8UbbSHM9TIpbkRIVXL2Cy3hD_vNk5oA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

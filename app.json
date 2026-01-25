@@ -20,7 +20,11 @@
         "NSLocationWhenInUseUsageDescription": "NovaGuardian necesita acceso a tu ubicación para mostrar la ubicación de tus seres queridos en tiempo real.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "NovaGuardian necesita acceso a tu ubicación para rastrear la ubicación de tus seres queridos incluso cuando la app está en segundo plano.",
         "NSCameraUsageDescription": "NovaGuardian necesita acceso a la cámara para escanear códigos QR de dispositivos.",
-        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -39,7 +43,12 @@
         "VIBRATE",
         "INTERNET",
         "ACCESS_NETWORK_STATE",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -54,7 +63,9 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#1E3A5F",
-          "sounds": ["./assets/sounds/alert.wav"]
+          "sounds": [
+            "./assets/sounds/alert.wav"
+          ]
         }
       ],
       [
@@ -70,16 +81,12 @@
       "env": "production",
       "apiUrl": "https://backend-production-2148.up.railway.app/api/v1",
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "058c9de4-f785-402f-bf6b-26a524651fa4"
       }
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/your-project-id"
     },
     "runtimeVersion": {
       "policy": "sdkVersion"
     },
-    "owner": "novaguardian"
+    "owner": "homsa"
   }
 }
