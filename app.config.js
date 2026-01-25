@@ -49,22 +49,14 @@ module.exports = {
         "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
       edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false,
-      // Use environment variable in EAS Build, local file otherwise
-      googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json"
+      predictiveBackGestureEnabled: false
+      // googleServicesFile comentado temporalmente - se agregará después
+      // googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json"
     },
     web: {
       favicon: "./assets/favicon.png"
     },
     plugins: [
-      [
-        "expo-notifications",
-        {
-          icon: "./assets/notification-icon.png",
-          color: "#1E3A5F",
-          sounds: ["./assets/sounds/alert.wav"]
-        }
-      ],
       [
         "expo-location",
         {
