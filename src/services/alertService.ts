@@ -77,19 +77,19 @@ export const alertService = {
    */
   markAsAttended: async (alertId: string, notes?: string): Promise<Alert> => {
     const response = await api.put<ApiResponse<Alert>>(
-      `/alerts/${alertId}/attended`,
+      `/alerts/${alertId}/attend`,
       { notes }
     );
     return response.data.data;
   },
 
   /**
-   * Marcar alerta como falsa alarma
+   * Marcar alerta como falsa alarma (usa attend con nota)
    */
   markAsFalseAlarm: async (alertId: string, notes?: string): Promise<Alert> => {
     const response = await api.put<ApiResponse<Alert>>(
-      `/alerts/${alertId}/false-alarm`,
-      { notes }
+      `/alerts/${alertId}/attend`,
+      { notes: `FALSA ALARMA: ${notes || 'Marcada como falsa alarma'}` }
     );
     return response.data.data;
   },
@@ -113,23 +113,23 @@ export const alertService = {
   },
 
   /**
-   * Obtener conteo de alertas pendientes
+   * Obtener conteo de alertas pendientes (usa unread)
    */
   getPendingCount: async (): Promise<number> => {
-    const response = await api.get<ApiResponse<{ count: number }>>('/alerts/pending-count');
-    return response.data.data.count || 0;
+    const response = await api.get<ApiResponse<Alert[]>>('/alerts/unread');
+    return response.data.data?.length || 0;
   },
 
   /**
    * Obtener conteo de alertas no leídas
    */
   getUnreadCount: async (): Promise<number> => {
-    const response = await api.get<ApiResponse<{ count: number }>>('/alerts/unread/count');
-    return response.data.data.count || 0;
+    const response = await api.get<ApiResponse<Alert[]>>('/alerts/unread');
+    return response.data.data?.length || 0;
   },
 
   /**
-   * Obtener alertas por dispositivo
+   * Obtener alertas por dispositivo (usa filtro en /alerts)
    */
   getAlertsByDevice: async (
     deviceId: string,
@@ -140,8 +140,8 @@ export const alertService = {
     }
   ): Promise<Alert[]> => {
     const response = await api.get<ApiResponse<Alert[]>>(
-      `/alerts/device/${deviceId}`,
-      params
+      `/alerts`,
+      { ...params, deviceId }
     );
     return response.data.data;
   },
@@ -150,17 +150,19 @@ export const alertService = {
    * Obtener alertas críticas no atendidas
    */
   getCriticalUnattended: async (): Promise<Alert[]> => {
-    const response = await api.get<ApiResponse<Alert[]>>('/alerts/critical-unattended');
-    return response.data.data;
+    const response = await api.get<ApiResponse<Alert[]>>('/alerts/unread');
+    // Filtrar solo las críticas en el cliente
+    const alerts = response.data.data || [];
+    return alerts.filter((a: Alert) => a.severity === 'critical');
   },
 
   /**
-   * Resolver/cerrar una alerta
+   * Resolver/cerrar una alerta (usa attend)
    */
   resolveAlert: async (alertId: string, notes?: string): Promise<Alert> => {
     const response = await api.put<ApiResponse<Alert>>(
-      `/alerts/${alertId}/resolve`,
-      { notes }
+      `/alerts/${alertId}/attend`,
+      { notes: notes || 'Alerta resuelta' }
     );
     return response.data.data;
   },

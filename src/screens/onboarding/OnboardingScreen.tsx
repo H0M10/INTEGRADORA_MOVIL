@@ -100,7 +100,7 @@ export const OnboardingScreen: React.FC = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || 'N/A';
       
-      const response = await api.post('/monitored', {
+      const response = await api.post('/monitored-persons', {
         firstName: firstName,
         lastName: lastName,
         relationship: personData.relationship.trim(),
@@ -116,7 +116,7 @@ export const OnboardingScreen: React.FC = () => {
         // Si hay teléfono de emergencia, agregarlo como contacto
         if (personData.emergencyPhone.trim() && personData.emergencyPhone.length === 10) {
           try {
-            await api.post(`/monitored/${personId}/contacts`, {
+            await api.post(`/monitored-persons/${personId}/emergency-contacts`, {
               name: 'Contacto de emergencia',
               phone: `+52${personData.emergencyPhone.trim()}`, // Agregar código de país
               relationship: 'emergencia',

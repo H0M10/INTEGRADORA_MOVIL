@@ -37,38 +37,65 @@ export const authService = {
    * Iniciar sesión
    */
   login: async (credentials: LoginForm): Promise<AuthResponse> => {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+    const response = await api.post<any>(
       '/auth/login',
       credentials
     );
     
-    const { data } = response.data;
+    console.log('📱 Login response:', JSON.stringify(response.data, null, 2));
+    
+    // La respuesta viene directamente como { accessToken, refreshToken, user, ... }
+    const responseData = response.data;
+    
+    // Extraer datos - puede venir con wrapper {success, data} o directo
+    const data = responseData.data || responseData;
+    
+    // El token puede venir como 'token' o 'accessToken'
+    const token = data.token || data.accessToken;
+    const refreshToken = data.refreshToken;
+    const user = data.user;
+    
+    if (!token) {
+      console.error('❌ Token no encontrado en respuesta:', data);
+      throw new Error('Token no recibido del servidor');
+    }
     
     // Guardar tokens de forma segura
-    await SecureStore.setItemAsync(config.STORAGE_KEYS.AUTH_TOKEN, data.token);
-    await SecureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
-    await SecureStore.setItemAsync(config.STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
+    await SecureStore.setItemAsync(config.STORAGE_KEYS.AUTH_TOKEN, token);
+    await SecureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    await SecureStore.setItemAsync(config.STORAGE_KEYS.USER_DATA, JSON.stringify(user));
     
-    return data;
+    // Retornar en formato esperado por la app
+    return {
+      user,
+      token,
+      refreshToken
+    };
   },
 
   /**
    * Registrar nuevo usuario
    */
   register: async (userData: RegisterForm): Promise<AuthResponse> => {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+    const response = await api.post<any>(
       '/auth/register',
       userData
     );
     
-    const { data } = response.data;
+    // La respuesta viene directamente como { accessToken, refreshToken, user, ... }
+    const responseData = response.data;
+    const data = responseData.data || responseData;
+    
+    const token = data.token || data.accessToken;
+    const refreshToken = data.refreshToken;
+    const user = data.user;
     
     // Guardar tokens de forma segura
-    await SecureStore.setItemAsync(config.STORAGE_KEYS.AUTH_TOKEN, data.token);
-    await SecureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
-    await SecureStore.setItemAsync(config.STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
+    await SecureStore.setItemAsync(config.STORAGE_KEYS.AUTH_TOKEN, token);
+    await SecureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+    await SecureStore.setItemAsync(config.STORAGE_KEYS.USER_DATA, JSON.stringify(user));
     
-    return data;
+    return { user, token, refreshToken };
   },
 
   /**
@@ -213,7 +240,7 @@ export const authService = {
    * Registrar token de notificaciones push
    */
   registerPushToken: async (pushToken: string): Promise<void> => {
-    await api.post('/auth/push-token', { pushToken });
+    await api.post('/notifications/push-token', { pushToken });
   },
 };
 

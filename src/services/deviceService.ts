@@ -22,7 +22,7 @@ export const deviceService = {
    * Obtener todos los dispositivos del usuario
    */
   getMyDevices: async (): Promise<Device[]> => {
-    const response = await api.get<ApiResponse<Device[]>>('/devices/my-devices');
+    const response = await api.get<ApiResponse<Device[]>>('/devices');
     return response.data.data;
   },
 
@@ -70,7 +70,7 @@ export const deviceService = {
    */
   getCurrentVitals: async (deviceId: string): Promise<VitalSigns | null> => {
     const response = await api.get<ApiResponse<VitalSigns | null>>(
-      `/monitoring/${deviceId}/current`
+      `/vital-signs/device/${deviceId}/current`
     );
     return response.data.data;
   },
@@ -88,7 +88,7 @@ export const deviceService = {
     }
   ): Promise<VitalSigns[]> => {
     const response = await api.get<ApiResponse<VitalSigns[]>>(
-      `/monitoring/${deviceId}/history`,
+      `/vital-signs/device/${deviceId}/history`,
       params
     );
     return response.data.data;
@@ -99,7 +99,7 @@ export const deviceService = {
    */
   getCurrentLocation: async (deviceId: string): Promise<Location | null> => {
     const response = await api.get<ApiResponse<Location | null>>(
-      `/monitoring/${deviceId}/location`
+      `/locations/device/${deviceId}/current`
     );
     return response.data.data;
   },
@@ -116,7 +116,7 @@ export const deviceService = {
     }
   ): Promise<Location[]> => {
     const response = await api.get<ApiResponse<Location[]>>(
-      `/monitoring/${deviceId}/locations`,
+      `/locations/device/${deviceId}/history`,
       params
     );
     return response.data.data;
@@ -142,13 +142,13 @@ export const deviceService = {
       model: string;
     };
   }> => {
-    const response = await api.post<ApiResponse<{
+    const response = await api.get<ApiResponse<{
       valid: boolean;
       device?: {
         serialNumber: string;
         model: string;
       };
-    }>>('/devices/verify-code', { code });
+    }>>(`/devices/code/${code}`);
     return response.data.data;
   },
 };
