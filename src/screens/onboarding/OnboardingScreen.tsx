@@ -69,9 +69,17 @@ export const OnboardingScreen: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   const handleCreatePerson = async () => {
-    // Validaciones
+    // Validaciones mejoradas
     if (!personData.name.trim()) {
       Alert.alert('Error', 'El nombre es requerido');
+      return;
+    }
+    if (personData.name.trim().length < 3) {
+      Alert.alert('Error', 'El nombre debe tener al menos 3 caracteres');
+      return;
+    }
+    if (personData.name.trim().length > 100) {
+      Alert.alert('Error', 'El nombre es demasiado largo');
       return;
     }
     if (!personData.age.trim() || isNaN(Number(personData.age))) {
@@ -87,8 +95,13 @@ export const OnboardingScreen: React.FC = () => {
       Alert.alert('Error', 'La relación es requerida');
       return;
     }
-    // Validar teléfono si se ingresó
-    if (personData.emergencyPhone.length > 0 && personData.emergencyPhone.length !== 10) {
+    if (personData.relationship.trim().length < 2) {
+      Alert.alert('Error', 'La relación debe tener al menos 2 caracteres');
+      return;
+    }
+    // Validar teléfono si se ingresó - solo dígitos, exactamente 10
+    const cleanPhone = personData.emergencyPhone.replace(/\D/g, '');
+    if (cleanPhone.length > 0 && cleanPhone.length !== 10) {
       Alert.alert('Error', 'El teléfono de emergencia debe tener exactamente 10 dígitos');
       return;
     }
@@ -143,8 +156,21 @@ export const OnboardingScreen: React.FC = () => {
   };
 
   const handleLinkDevice = async () => {
-    if (!deviceCode.trim()) {
+    // Limpiar código de guiones y espacios
+    const cleanCode = deviceCode.replace(/[-\s]/g, '').trim().toUpperCase();
+    
+    if (!cleanCode) {
       Alert.alert('Error', 'Ingresa el código del dispositivo');
+      return;
+    }
+    
+    if (cleanCode.length < 6) {
+      Alert.alert('Error', 'El código debe tener al menos 6 caracteres');
+      return;
+    }
+    
+    if (cleanCode.length > 20) {
+      Alert.alert('Error', 'El código es demasiado largo');
       return;
     }
 
@@ -152,15 +178,18 @@ export const OnboardingScreen: React.FC = () => {
     try {
       // Vincular dispositivo a la persona creada
       await api.post('/devices/link', {
-        device_code: deviceCode.trim().toUpperCase(),
-        person_id: createdPersonId,
+        code: cleanCode,
+        monitoredPersonId: createdPersonId,
       });
 
       setCurrentStep('complete');
     } catch (error: any) {
+      const errorMsg = error.response?.data?.detail || 'No se pudo vincular el dispositivo';
       Alert.alert(
         'Error',
-        error.response?.data?.detail || 'No se pudo vincular el dispositivo'
+        errorMsg.includes('ya esta vinculado') 
+          ? 'Este dispositivo ya está vinculado a otra persona. Contacta soporte si crees que es un error.'
+          : errorMsg
       );
     } finally {
       setIsLoading(false);
@@ -268,8 +297,9 @@ export const OnboardingScreen: React.FC = () => {
               style={styles.input}
               placeholder="Ej: María García López"
               value={personData.name}
-              onChangeText={(text) => setPersonData(prev => ({ ...prev, name: text }))}
+              onChangeText={(text) => setPersonData(prev => ({ ...prev, name: text.slice(0, 100) }))}
               autoCapitalize="words"
+              maxLength={100}
             />
           </View>
         </View>
@@ -283,7 +313,7 @@ export const OnboardingScreen: React.FC = () => {
                 style={[styles.input, { textAlign: 'center' }]}
                 placeholder="65"
                 value={personData.age}
-                onChangeText={(text) => setPersonData(prev => ({ ...prev, age: text.replace(/[^0-9]/g, '') }))}
+                onChangeText={(text) => setPersonData(prev => ({ ...prev, age: text.replace(/[^0-9]/g, '').slice(0, 3) }))}
                 keyboardType="number-pad"
                 maxLength={3}
               />
@@ -298,8 +328,9 @@ export const OnboardingScreen: React.FC = () => {
                 style={styles.input}
                 placeholder="Ej: Abuela, Padre, Madre"
                 value={personData.relationship}
-                onChangeText={(text) => setPersonData(prev => ({ ...prev, relationship: text }))}
+                onChangeText={(text) => setPersonData(prev => ({ ...prev, relationship: text.slice(0, 30) }))}
                 autoCapitalize="words"
+                maxLength={30}
               />
             </View>
           </View>
@@ -313,9 +344,10 @@ export const OnboardingScreen: React.FC = () => {
               style={[styles.input, styles.textArea]}
               placeholder="Ej: Diabetes tipo 2, Hipertensión"
               value={personData.medicalConditions}
-              onChangeText={(text) => setPersonData(prev => ({ ...prev, medicalConditions: text }))}
+              onChangeText={(text) => setPersonData(prev => ({ ...prev, medicalConditions: text.slice(0, 500) }))}
               multiline
               numberOfLines={3}
+              maxLength={500}
             />
           </View>
         </View>
@@ -371,7 +403,7 @@ export const OnboardingScreen: React.FC = () => {
       </View>
 
       <Text style={styles.stepDescription}>
-        Ingresa el código que aparece en tu dispositivo NovaGuardian o en su caja. El código tiene formato: NG-XXXX-XXXX
+        Ingresa el código que aparece en tu dispositivo NovaGuardian o en su caja. Ejemplo: NOVA001 o NG-XXXX
       </Text>
 
       <Card variant="elevated" style={styles.formCard}>
@@ -380,18 +412,23 @@ export const OnboardingScreen: React.FC = () => {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Código del dispositivo</Text>
+          <Text style={styles.inputLabel}>Código del dispositivo (6-20 caracteres)</Text>
           <View style={styles.inputContainer}>
             <Ionicons name="qr-code-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
             <TextInput
               style={[styles.input, styles.deviceCodeInput]}
-              placeholder="NG-XXXX-XXXX"
+              placeholder="NOVA001 o NG-XXXX"
               value={deviceCode}
-              onChangeText={(text) => setDeviceCode(text.toUpperCase())}
+              onChangeText={(text) => setDeviceCode(text.toUpperCase().slice(0, 20))}
               autoCapitalize="characters"
-              maxLength={12}
+              maxLength={20}
             />
           </View>
+          {deviceCode.length > 0 && deviceCode.replace(/[-\s]/g, '').length < 6 && (
+            <Text style={{ color: colors.status.warning, fontSize: 12, marginTop: 4 }}>
+              El código debe tener al menos 6 caracteres
+            </Text>
+          )}
         </View>
 
         <View style={styles.helpBox}>
@@ -406,7 +443,7 @@ export const OnboardingScreen: React.FC = () => {
         title="Vincular dispositivo"
         onPress={handleLinkDevice}
         loading={isLoading}
-        disabled={isLoading}
+        disabled={isLoading || deviceCode.replace(/[-\s]/g, '').length < 6}
         gradient
         size="lg"
         fullWidth

@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   needsOnboarding: false,
 
   // =========================================================================
-  // LOGIN
+  // LOGIN - Verifica onboarding basado en BD y AsyncStorage
   // =========================================================================
   login: async (credentials: LoginForm) => {
     set({ isLoading: true, error: null });
@@ -57,10 +57,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { user, token } = await authService.login(credentials);
       
-      // Verificar si necesita onboarding
-      const onboardingComplete = await AsyncStorage.getItem(`onboarding_${user.id}`);
-      const needsOnboarding = !onboardingComplete;
+      // Primero verificar AsyncStorage local
+      let onboardingComplete = await AsyncStorage.getItem(`onboarding_${user.id}`);
+      let needsOnboarding = !onboardingComplete;
       
+      // Establecer autenticación primero para poder hacer llamadas a API
       set({
         user,
         token,
@@ -69,6 +70,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
         needsOnboarding,
       });
+      
+      // Si no hay registro local, verificar BD (async, no bloquea UI)
+      if (needsOnboarding) {
+        setTimeout(async () => {
+          try {
+            const { api } = await import('../services/api');
+            const monitoredResponse = await api.get('/monitored-persons');
+            // La estructura es: axios.data = { success, data: [...] }
+            const responseData = monitoredResponse.data as { data?: unknown[] } | undefined;
+            const hasMonitoredPersons = Array.isArray(responseData?.data) && responseData.data.length > 0;
+            
+            if (hasMonitoredPersons) {
+              await AsyncStorage.setItem(`onboarding_${user.id}`, 'true');
+              set({ needsOnboarding: false });
+            }
+          } catch (e) {
+            // Si falla la verificación, mantener needsOnboarding actual
+          }
+        }, 500);
+      }
     } catch (error: any) {
       set({
         isLoading: false,
@@ -263,17 +284,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   // =========================================================================
-  // VERIFICAR ESTADO DE ONBOARDING
+  // VERIFICAR ESTADO DE ONBOARDING - Verifica BD y AsyncStorage
   // =========================================================================
   checkOnboardingStatus: async (): Promise<boolean> => {
     const user = get().user;
     if (!user) return false;
     
     try {
+      // Primero verificar AsyncStorage local
       const onboardingComplete = await AsyncStorage.getItem(`onboarding_${user.id}`);
-      const needsOnboarding = !onboardingComplete;
-      set({ needsOnboarding });
-      return needsOnboarding;
+      
+      if (onboardingComplete) {
+        set({ needsOnboarding: false });
+        return false;
+      }
+      
+      // Si no hay registro local, verificar en la BD si ya tiene datos
+      // Esto maneja el caso de reinstalación o cambio de dispositivo
+      const { api } = await import('../services/api');
+      
+      try {
+        // Verificar si tiene personas monitoreadas
+        const monitoredResponse = await api.get('/monitored-persons');
+        // La estructura es: axios.data = { success, data: [...] }
+        const responseData = monitoredResponse.data as { data?: unknown[] } | undefined;
+        const hasMonitoredPersons = Array.isArray(responseData?.data) && responseData.data.length > 0;
+        
+        if (hasMonitoredPersons) {
+          // Usuario ya tiene datos, marcar onboarding como completado
+          await AsyncStorage.setItem(`onboarding_${user.id}`, 'true');
+          set({ needsOnboarding: false });
+          return false;
+        }
+      } catch (apiError) {
+        console.log('No se pudo verificar personas monitoreadas:', apiError);
+      }
+      
+      // No tiene datos, necesita onboarding
+      set({ needsOnboarding: true });
+      return true;
     } catch (error) {
       console.error('Error checking onboarding status:', error);
       return false;

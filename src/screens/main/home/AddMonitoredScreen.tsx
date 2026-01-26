@@ -57,13 +57,23 @@ export const AddMonitoredScreen: React.FC<AddMonitoredScreenProps> = ({
 
   const { linkDevice } = useDeviceStore();
 
+  // Validaciones con regex
+  const PHONE_REGEX = /^[0-9]{10}$/;
+  const DATE_REGEX = /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+  const VALID_BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
   const validateDeviceStep = (): boolean => {
-    if (!deviceCode.trim()) {
+    const cleanCode = deviceCode.replace(/[-\s]/g, '').trim();
+    if (!cleanCode) {
       setErrors({ deviceCode: 'Ingresa el código del dispositivo' });
       return false;
     }
-    if (deviceCode.length < 8) {
-      setErrors({ deviceCode: 'El código debe tener al menos 8 caracteres' });
+    if (cleanCode.length < 6) {
+      setErrors({ deviceCode: 'El código debe tener al menos 6 caracteres' });
+      return false;
+    }
+    if (cleanCode.length > 20) {
+      setErrors({ deviceCode: 'El código no puede tener más de 20 caracteres' });
       return false;
     }
     setErrors({});
@@ -73,17 +83,66 @@ export const AddMonitoredScreen: React.FC<AddMonitoredScreenProps> = ({
   const validatePersonStep = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    // Nombre: 2-50 caracteres, solo letras y espacios
     if (!personData.firstName.trim()) {
       newErrors.firstName = 'El nombre es requerido';
+    } else if (personData.firstName.trim().length < 2) {
+      newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
+    } else if (personData.firstName.trim().length > 50) {
+      newErrors.firstName = 'El nombre no puede exceder 50 caracteres';
     }
+
+    // Apellido: 2-50 caracteres
     if (!personData.lastName.trim()) {
       newErrors.lastName = 'El apellido es requerido';
+    } else if (personData.lastName.trim().length < 2) {
+      newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
+    } else if (personData.lastName.trim().length > 50) {
+      newErrors.lastName = 'El apellido no puede exceder 50 caracteres';
     }
+
+    // Fecha de nacimiento: formato DD/MM/AAAA
     if (!personData.dateOfBirth.trim()) {
       newErrors.dateOfBirth = 'La fecha de nacimiento es requerida';
+    } else if (!DATE_REGEX.test(personData.dateOfBirth)) {
+      newErrors.dateOfBirth = 'Formato inválido (DD/MM/AAAA)';
+    } else {
+      // Validar que la fecha sea válida y la persona tenga entre 1 y 120 años
+      const [day, month, year] = personData.dateOfBirth.split('/').map(Number);
+      const birthDate = new Date(year, month - 1, day);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      
+      if (birthDate > today) {
+        newErrors.dateOfBirth = 'La fecha no puede ser futura';
+      } else if (age < 1) {
+        newErrors.dateOfBirth = 'La persona debe tener al menos 1 año';
+      } else if (age > 120) {
+        newErrors.dateOfBirth = 'Edad no válida (máximo 120 años)';
+      }
     }
+
+    // Relación: requerida, 2-30 caracteres
     if (!personData.relationship.trim()) {
       newErrors.relationship = 'La relación es requerida';
+    } else if (personData.relationship.trim().length < 2) {
+      newErrors.relationship = 'Debe tener al menos 2 caracteres';
+    }
+
+    // Teléfono: opcional pero si se ingresa debe ser válido (10 dígitos)
+    if (personData.phone.trim()) {
+      const cleanPhone = personData.phone.replace(/\D/g, '');
+      if (!PHONE_REGEX.test(cleanPhone)) {
+        newErrors.phone = 'El teléfono debe tener exactamente 10 dígitos';
+      }
+    }
+
+    // Tipo de sangre: opcional pero si se ingresa debe ser válido
+    if (personData.bloodType.trim()) {
+      const bloodUpper = personData.bloodType.trim().toUpperCase();
+      if (!VALID_BLOOD_TYPES.includes(bloodUpper)) {
+        newErrors.bloodType = 'Tipo de sangre inválido (ej: A+, O-, AB+)';
+      }
     }
 
     setErrors(newErrors);
@@ -101,16 +160,21 @@ export const AddMonitoredScreen: React.FC<AddMonitoredScreenProps> = ({
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
+      // Limpiar el código de guiones y espacios
+      const cleanCode = deviceCode.replace(/[-\s]/g, '').trim().toUpperCase();
+      // Limpiar teléfono
+      const cleanPhone = personData.phone.replace(/\D/g, '');
+      
       await linkDevice({
-        deviceCode: deviceCode.trim(),
+        deviceCode: cleanCode,
         monitoredPerson: {
           firstName: personData.firstName.trim(),
           lastName: personData.lastName.trim(),
           dateOfBirth: personData.dateOfBirth,
-          bloodType: personData.bloodType || undefined,
-          phone: personData.phone || undefined,
+          bloodType: personData.bloodType.toUpperCase() || undefined,
+          phone: cleanPhone ? `+52${cleanPhone}` : undefined,
         },
-        relationship: personData.relationship,
+        relationship: personData.relationship.trim(),
       });
       
       Alert.alert(
@@ -163,12 +227,13 @@ export const AddMonitoredScreen: React.FC<AddMonitoredScreenProps> = ({
 
       <Input
         label="Código del dispositivo"
-        placeholder="NG-XXXXXXXX"
+        placeholder="NOVA001 o NG-XXXXXX"
         value={deviceCode}
-        onChangeText={setDeviceCode}
+        onChangeText={(v) => setDeviceCode(v.toUpperCase().slice(0, 20))}
         autoCapitalize="characters"
         leftIcon="barcode-outline"
         error={errors.deviceCode}
+        maxLength={20}
       />
 
       <TouchableOpacity style={styles.helpLink}>
@@ -194,61 +259,81 @@ export const AddMonitoredScreen: React.FC<AddMonitoredScreenProps> = ({
       <View style={styles.row}>
         <View style={styles.halfInput}>
           <Input
-            label="Nombre"
+            label="Nombre *"
             placeholder="Juan"
             value={personData.firstName}
-            onChangeText={(v) => setPersonData({ ...personData, firstName: v })}
+            onChangeText={(v) => setPersonData({ ...personData, firstName: v.slice(0, 50) })}
             error={errors.firstName}
+            maxLength={50}
           />
         </View>
         <View style={styles.halfInput}>
           <Input
-            label="Apellido"
+            label="Apellido *"
             placeholder="Pérez"
             value={personData.lastName}
-            onChangeText={(v) => setPersonData({ ...personData, lastName: v })}
+            onChangeText={(v) => setPersonData({ ...personData, lastName: v.slice(0, 50) })}
             error={errors.lastName}
+            maxLength={50}
           />
         </View>
       </View>
 
       <Input
-        label="Fecha de nacimiento"
+        label="Fecha de nacimiento *"
         placeholder="DD/MM/AAAA"
         value={personData.dateOfBirth}
-        onChangeText={(v) => setPersonData({ ...personData, dateOfBirth: v })}
-        keyboardType="numbers-and-punctuation"
+        onChangeText={(v) => {
+          // Auto-formatear con /
+          const cleaned = v.replace(/\D/g, '').slice(0, 8);
+          let formatted = cleaned;
+          if (cleaned.length > 2) {
+            formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+          }
+          if (cleaned.length > 4) {
+            formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4) + '/' + cleaned.slice(4);
+          }
+          setPersonData({ ...personData, dateOfBirth: formatted });
+        }}
+        keyboardType="number-pad"
         leftIcon="calendar-outline"
         error={errors.dateOfBirth}
+        maxLength={10}
       />
 
       <View style={styles.row}>
         <View style={styles.halfInput}>
           <Input
             label="Tipo de sangre"
-            placeholder="O+"
+            placeholder="O+, A-, AB+"
             value={personData.bloodType}
-            onChangeText={(v) => setPersonData({ ...personData, bloodType: v })}
+            onChangeText={(v) => setPersonData({ ...personData, bloodType: v.toUpperCase().slice(0, 3) })}
+            autoCapitalize="characters"
+            maxLength={3}
+            error={errors.bloodType}
           />
         </View>
         <View style={styles.halfInput}>
           <Input
-            label="Teléfono"
-            placeholder="+52 123..."
+            label="Teléfono (10 dígitos)"
+            placeholder="5512345678"
             value={personData.phone}
-            onChangeText={(v) => setPersonData({ ...personData, phone: v })}
-            keyboardType="phone-pad"
+            onChangeText={(v) => setPersonData({ ...personData, phone: v.replace(/\D/g, '').slice(0, 10) })}
+            keyboardType="number-pad"
+            maxLength={10}
+            error={errors.phone}
           />
         </View>
       </View>
 
       <Input
-        label="Tu relación con esta persona"
+        label="Tu relación con esta persona *"
         placeholder="Ej: Hijo/a, Nieto/a, Cuidador/a"
         value={personData.relationship}
-        onChangeText={(v) => setPersonData({ ...personData, relationship: v })}
+        onChangeText={(v) => setPersonData({ ...personData, relationship: v.slice(0, 30) })}
         leftIcon="people-outline"
         error={errors.relationship}
+        maxLength={30}
       />
     </Card>
   );
