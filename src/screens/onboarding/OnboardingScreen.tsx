@@ -63,6 +63,32 @@ export const OnboardingScreen: React.FC = () => {
 
   // Datos del dispositivo
   const [deviceCode, setDeviceCode] = useState('');
+  
+  // Estado para tracking de lo que se creó exitosamente
+  const [deviceLinked, setDeviceLinked] = useState(false);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FUNCIÓN DE VERIFICACIÓN - Confirma que los datos existen en el servidor
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const verifyDataCreated = async (): Promise<{ personExists: boolean; deviceLinked: boolean }> => {
+    try {
+      // Verificar que la persona monitoreada existe
+      const monitoredResponse = await api.get('/monitored-persons');
+      const persons = monitoredResponse.data?.data || monitoredResponse.data || [];
+      const personExists = Array.isArray(persons) && persons.length > 0;
+      
+      // Verificar que hay al menos un dispositivo vinculado
+      const devicesResponse = await api.get('/devices');
+      const devices = devicesResponse.data?.data || devicesResponse.data || [];
+      const hasDevice = Array.isArray(devices) && devices.length > 0;
+      
+      return { personExists, deviceLinked: hasDevice };
+    } catch (error) {
+      console.error('Error verificando datos:', error);
+      return { personExists: false, deviceLinked: false };
+    }
+  };
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HANDLERS
@@ -113,6 +139,8 @@ export const OnboardingScreen: React.FC = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || 'N/A';
       
+      console.log('[Onboarding] Creando persona monitoreada:', firstName, lastName);
+      
       const response = await api.post('/monitored-persons', {
         firstName: firstName,
         lastName: lastName,
@@ -122,8 +150,23 @@ export const OnboardingScreen: React.FC = () => {
         notes: personData.medicalConditions.trim() || null,
       });
 
+      console.log('[Onboarding] Respuesta de crear persona:', response.data);
+
       if (response.data?.data?.id || response.data?.id) {
         const personId = response.data?.data?.id || response.data?.id;
+        
+        // VERIFICACIÓN: Confirmar que la persona realmente existe en el servidor
+        try {
+          const verifyResponse = await api.get(`/monitored-persons/${personId}`);
+          if (!verifyResponse.data?.data && !verifyResponse.data?.id) {
+            throw new Error('La persona no se guardó correctamente');
+          }
+          console.log('[Onboarding] Persona verificada exitosamente');
+        } catch (verifyError) {
+          console.error('[Onboarding] Error verificando persona:', verifyError);
+          throw new Error('No se pudo verificar que la persona se guardó correctamente. Intenta de nuevo.');
+        }
+        
         setCreatedPersonId(personId);
         
         // Si hay teléfono de emergencia, agregarlo como contacto
@@ -135,8 +178,10 @@ export const OnboardingScreen: React.FC = () => {
               relationship: 'emergencia',
               isPrimary: true,
             });
+            console.log('[Onboarding] Contacto de emergencia agregado');
           } catch (contactError) {
             console.log('No se pudo agregar contacto de emergencia:', contactError);
+            // No es crítico, continuar
           }
         }
         
@@ -174,21 +219,54 @@ export const OnboardingScreen: React.FC = () => {
       return;
     }
 
+    // Verificar que tenemos el ID de la persona
+    if (!createdPersonId) {
+      Alert.alert(
+        'Error',
+        'No se encontró la persona monitoreada. Por favor, regresa al paso anterior.',
+        [{ text: 'OK', onPress: () => setCurrentStep('person') }]
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
+      console.log('[Onboarding] Vinculando dispositivo:', cleanCode, 'a persona:', createdPersonId);
+      
       // Vincular dispositivo a la persona creada
-      await api.post('/devices/link', {
+      const response = await api.post('/devices/link', {
         code: cleanCode,
         monitoredPersonId: createdPersonId,
       });
 
+      console.log('[Onboarding] Respuesta de link:', response.data);
+
+      // Verificar que el link fue exitoso consultando los dispositivos
+      const verifyResponse = await api.get('/devices');
+      const devices = verifyResponse.data?.data || verifyResponse.data || [];
+      const linkedDevice = Array.isArray(devices) && devices.some((d: any) => 
+        d.code?.toUpperCase() === cleanCode || 
+        d.code?.replace(/-/g, '').toUpperCase() === cleanCode
+      );
+
+      if (!linkedDevice) {
+        // El link pareció funcionar pero no se refleja en los datos
+        console.error('[Onboarding] Dispositivo no aparece vinculado después del link');
+        throw new Error('El dispositivo no se vinculó correctamente. Intenta de nuevo.');
+      }
+
+      console.log('[Onboarding] Dispositivo vinculado exitosamente');
+      setDeviceLinked(true);
       setCurrentStep('complete');
     } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || 'No se pudo vincular el dispositivo';
+      console.error('[Onboarding] Error vinculando dispositivo:', error);
+      const errorMsg = error.response?.data?.detail || error.message || 'No se pudo vincular el dispositivo';
       Alert.alert(
-        'Error',
-        errorMsg.includes('ya esta vinculado') 
+        'Error al vincular dispositivo',
+        errorMsg.includes('ya esta vinculado') || errorMsg.includes('ya está vinculado')
           ? 'Este dispositivo ya está vinculado a otra persona. Contacta soporte si crees que es un error.'
+          : errorMsg.includes('no encontrado') || errorMsg.includes('not found')
+          ? 'El código de dispositivo no existe. Verifica que sea correcto.'
           : errorMsg
       );
     } finally {
@@ -198,13 +276,17 @@ export const OnboardingScreen: React.FC = () => {
 
   const handleSkipDevice = () => {
     Alert.alert(
-      'Omitir vinculación',
-      'Podrás vincular un dispositivo más tarde desde la configuración. ¿Deseas continuar?',
+      '⚠️ Advertencia importante',
+      'Sin un dispositivo vinculado, NO podrás monitorear a tu ser querido ni recibir alertas de emergencia.\n\n¿Estás seguro de que deseas continuar sin dispositivo?',
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Vincular dispositivo', style: 'cancel' },
         { 
-          text: 'Continuar', 
-          onPress: () => setCurrentStep('complete')
+          text: 'Continuar sin dispositivo', 
+          style: 'destructive',
+          onPress: () => {
+            setDeviceLinked(false);
+            setCurrentStep('complete');
+          }
         },
       ]
     );
@@ -213,10 +295,54 @@ export const OnboardingScreen: React.FC = () => {
   const handleComplete = async () => {
     setIsLoading(true);
     try {
-      // Marcar onboarding como completado
+      // VERIFICACIÓN FINAL: Confirmar que los datos existen en el servidor
+      console.log('[Onboarding] Verificando datos antes de completar...');
+      const { personExists, deviceLinked: hasDevice } = await verifyDataCreated();
+      
+      if (!personExists) {
+        // La persona no existe en el servidor - algo salió mal
+        Alert.alert(
+          'Error de configuración',
+          'No se encontró la persona monitoreada en el servidor. Por favor, vuelve a registrarla.',
+          [{ text: 'OK', onPress: () => {
+            setCreatedPersonId(null);
+            setCurrentStep('person');
+          }}]
+        );
+        return;
+      }
+
+      if (!hasDevice && deviceLinked) {
+        // Se supone que vinculó dispositivo pero no aparece
+        Alert.alert(
+          'Error de configuración',
+          'El dispositivo no se vinculó correctamente. Por favor, inténtalo de nuevo.',
+          [{ text: 'OK', onPress: () => setCurrentStep('device') }]
+        );
+        return;
+      }
+
+      // Si no tiene dispositivo, mostrar advertencia final
+      if (!hasDevice) {
+        Alert.alert(
+          'Configuración incompleta',
+          'Tu cuenta no tiene un dispositivo vinculado. No recibirás alertas de monitoreo hasta que vincules uno.\n\nPodrás hacerlo después desde Configuración.',
+          [{ text: 'Entendido', onPress: async () => {
+            await completeOnboarding();
+          }}]
+        );
+        return;
+      }
+
+      console.log('[Onboarding] Verificación exitosa, completando onboarding');
+      // Todo verificado, completar onboarding
       await completeOnboarding();
     } catch (error) {
       console.error('Error completing onboarding:', error);
+      Alert.alert(
+        'Error',
+        'No se pudo completar la configuración. Por favor, intenta de nuevo.'
+      );
     } finally {
       setIsLoading(false);
     }
