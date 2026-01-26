@@ -50,6 +50,13 @@ const apiClient: AxiosInstance = axios.create({
 // Agrega el token de autenticación y transforma camelCase a snake_case
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Endpoints que esperan camelCase (NO transformar a snake_case)
+const CAMEL_CASE_ENDPOINTS = [
+  '/auth/register',
+  '/auth/login',
+  '/auth/refresh',
+];
+
 apiClient.interceptors.request.use(
   async (requestConfig: InternalAxiosRequestConfig) => {
     try {
@@ -62,8 +69,12 @@ apiClient.interceptors.request.use(
       console.error('Error obteniendo token:', error);
     }
 
-    // Transformar body de camelCase a snake_case
-    if (requestConfig.data && typeof requestConfig.data === 'object') {
+    // Verificar si el endpoint requiere camelCase
+    const url = requestConfig.url || '';
+    const skipTransform = CAMEL_CASE_ENDPOINTS.some(endpoint => url.includes(endpoint));
+
+    // Transformar body de camelCase a snake_case (excepto endpoints de auth)
+    if (requestConfig.data && typeof requestConfig.data === 'object' && !skipTransform) {
       requestConfig.data = transformRequest(requestConfig.data);
     }
 
@@ -164,8 +175,23 @@ apiClient.interceptors.response.use(
 function getErrorMessage(error: AxiosError): string {
   if (error.response?.data) {
     const data = error.response.data as any;
+    
+    // Mensaje directo del servidor
     if (data.message) return data.message;
     if (data.error) return data.error;
+    if (data.detail) {
+      // Pydantic validation errors (FastAPI)
+      if (Array.isArray(data.detail)) {
+        // Extraer el primer error de validación
+        const firstError = data.detail[0];
+        if (firstError?.msg) {
+          const field = firstError.loc?.slice(-1)[0] || 'campo';
+          return `Error en ${field}: ${firstError.msg}`;
+        }
+        return data.detail.map((e: any) => e.msg || e).join(', ');
+      }
+      return data.detail;
+    }
   }
 
   if (error.message === 'Network Error') {
@@ -186,7 +212,7 @@ function getErrorMessage(error: AxiosError): string {
     case 404:
       return 'El recurso solicitado no fue encontrado.';
     case 422:
-      return 'Los datos enviados no son válidos.';
+      return 'Los datos enviados no son válidos. Verifica los campos.';
     case 429:
       return 'Demasiadas solicitudes. Espera un momento.';
     case 500:
