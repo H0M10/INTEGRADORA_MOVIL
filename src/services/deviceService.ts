@@ -69,9 +69,16 @@ export const deviceService = {
    * Obtener signos vitales actuales
    */
   getCurrentVitals: async (deviceId: string): Promise<VitalSigns | null> => {
+    console.log('💓 deviceService.getCurrentVitals - Solicitando vitales para dispositivo:', deviceId);
     const response = await api.get<ApiResponse<VitalSigns | null>>(
       `/vital-signs/device/${deviceId}/current`
     );
+    console.log('💓 deviceService.getCurrentVitals - Respuesta:', {
+      success: response.data.success,
+      hasData: !!response.data.data,
+      heartRate: response.data.data?.heartRate,
+      oxygenLevel: response.data.data?.oxygenLevel,
+    });
     return response.data.data;
   },
 

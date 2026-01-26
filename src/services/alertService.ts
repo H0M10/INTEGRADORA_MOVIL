@@ -43,7 +43,13 @@ export const alertService = {
       totalPages: number;
     };
   }> => {
+    console.log('📋 alertService.getAlerts - Solicitando alertas con filtros:', filters);
     const response = await api.get<ApiResponse<Alert[]>>('/alerts', filters);
+    console.log('📋 alertService.getAlerts - Respuesta recibida:', {
+      success: response.data.success,
+      alertCount: response.data.data?.length || 0,
+      firstAlert: response.data.data?.[0]?.title,
+    });
     const alerts = response.data.data || [];
     return {
       alerts,
