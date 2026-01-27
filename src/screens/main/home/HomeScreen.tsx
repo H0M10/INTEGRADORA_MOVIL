@@ -349,8 +349,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             actionLabel="Vincular Dispositivo"
             onAction={() => navigation.navigate('AddMonitored')}
           />
-        ) : (
+        ) : !selectedPerson ? (
+          <Card style={styles.selectPersonCard}>
+            <View style={styles.selectPersonContent}>
+              <Ionicons name="person-circle-outline" size={48} color={colors.primary[400]} />
+              <Text style={styles.selectPersonTitle}>Selecciona una persona</Text>
+              <Text style={styles.selectPersonText}>
+                Toca en una de las personas monitoreadas arriba para ver sus signos vitales
+              </Text>
+            </View>
+          </Card>
+        ) : devicesLoading ? (
           <Loading message="Cargando signos vitales..." />
+        ) : (
+          <Card style={styles.noVitalsCard}>
+            <View style={styles.noVitalsContent}>
+              <Ionicons name="pulse-outline" size={48} color={colors.text.tertiary} />
+              <Text style={styles.noVitalsTitle}>Sin datos de signos vitales</Text>
+              <Text style={styles.noVitalsText}>
+                Esperando datos del dispositivo...
+              </Text>
+            </View>
+          </Card>
         )}
 
         {/* Estado del dispositivo */}
@@ -907,6 +927,45 @@ const styles = StyleSheet.create({
   },
   actionText: {
     ...typography.caption,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  // Cards para estados sin datos
+  selectPersonCard: {
+    marginHorizontal: spacing.base,
+    marginBottom: spacing.lg,
+    padding: spacing.xl,
+  },
+  selectPersonContent: {
+    alignItems: 'center',
+  },
+  selectPersonTitle: {
+    ...typography.h4,
+    color: colors.text.primary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  selectPersonText: {
+    ...typography.body,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  noVitalsCard: {
+    marginHorizontal: spacing.base,
+    marginBottom: spacing.lg,
+    padding: spacing.xl,
+  },
+  noVitalsContent: {
+    alignItems: 'center',
+  },
+  noVitalsTitle: {
+    ...typography.h4,
+    color: colors.text.primary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  noVitalsText: {
+    ...typography.body,
     color: colors.text.secondary,
     textAlign: 'center',
   },
