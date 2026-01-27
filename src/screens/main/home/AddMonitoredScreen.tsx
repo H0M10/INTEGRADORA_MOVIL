@@ -222,24 +222,31 @@ export const AddMonitoredScreen: React.FC<AddMonitoredScreenProps> = ({
       
       <Text style={styles.stepTitle}>Vincular Dispositivo</Text>
       <Text style={styles.stepDescription}>
-        Ingresa el código que aparece en la parte posterior del dispositivo NovaGuardian.
+        Ingresa el código de vinculación que aparece en la parte posterior del dispositivo NovaGuardian o que te proporcionó el administrador.
       </Text>
 
+      <View style={styles.codeExample}>
+        <Text style={styles.codeExampleLabel}>Ejemplo de código:</Text>
+        <Text style={styles.codeExampleText}>NOVA001  •  NG8F4B2C  •  TESTDEV1</Text>
+      </View>
+
       <Input
-        label="Código del dispositivo"
-        placeholder="NOVA001 o NG-XXXXXX"
+        label="Código de vinculación"
+        placeholder="Ej: NOVA001"
         value={deviceCode}
-        onChangeText={(v) => setDeviceCode(v.toUpperCase().slice(0, 20))}
+        onChangeText={(v) => setDeviceCode(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
         autoCapitalize="characters"
         leftIcon="barcode-outline"
         error={errors.deviceCode}
         maxLength={20}
       />
 
-      <TouchableOpacity style={styles.helpLink}>
-        <Ionicons name="help-circle-outline" size={18} color={colors.primary[500]} />
-        <Text style={styles.helpLinkText}>¿Dónde encuentro el código?</Text>
-      </TouchableOpacity>
+      <View style={styles.infoBox}>
+        <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
+        <Text style={styles.infoText}>
+          El código tiene entre 6-20 caracteres (letras y números). Lo encuentras en la caja del dispositivo o en el panel web de administración.
+        </Text>
+      </View>
     </Card>
   );
 
@@ -545,6 +552,39 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.primary[500],
     marginLeft: spacing.xs,
+  },
+  codeExample: {
+    backgroundColor: colors.primary[50],
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  codeExampleLabel: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    marginBottom: spacing.xs,
+  },
+  codeExampleText: {
+    ...typography.body,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: colors.primary[600],
+    letterSpacing: 1,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    backgroundColor: colors.status.info + '15',
+    borderRadius: 12,
+    padding: spacing.md,
+    marginTop: spacing.md,
+    alignItems: 'flex-start',
+  },
+  infoText: {
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginLeft: spacing.sm,
+    flex: 1,
   },
   // Confirmation
   confirmationSection: {

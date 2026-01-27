@@ -529,7 +529,7 @@ export const OnboardingScreen: React.FC = () => {
       </View>
 
       <Text style={styles.stepDescription}>
-        Ingresa el código que aparece en tu dispositivo NovaGuardian o en su caja. Ejemplo: NOVA001 o NG-XXXX
+        Ingresa el código de vinculación que aparece en tu dispositivo NovaGuardian, en su caja, o que te proporcionó el administrador.
       </Text>
 
       <Card variant="elevated" style={styles.formCard}>
@@ -537,15 +537,20 @@ export const OnboardingScreen: React.FC = () => {
           <Ionicons name="watch-outline" size={60} color={colors.primary[500]} />
         </View>
 
+        <View style={styles.codeExampleBox}>
+          <Text style={styles.codeExampleLabel}>Ejemplos de códigos válidos:</Text>
+          <Text style={styles.codeExampleValue}>NOVA001  •  NG8F4B2C  •  TESTDEV1</Text>
+        </View>
+
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Código del dispositivo (6-20 caracteres)</Text>
+          <Text style={styles.inputLabel}>Código de vinculación (6-20 caracteres)</Text>
           <View style={styles.inputContainer}>
             <Ionicons name="qr-code-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
             <TextInput
               style={[styles.input, styles.deviceCodeInput]}
-              placeholder="NOVA001 o NG-XXXX"
+              placeholder="Ej: NOVA001"
               value={deviceCode}
-              onChangeText={(text) => setDeviceCode(text.toUpperCase().slice(0, 20))}
+              onChangeText={(text) => setDeviceCode(text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
               autoCapitalize="characters"
               maxLength={20}
             />
@@ -558,9 +563,9 @@ export const OnboardingScreen: React.FC = () => {
         </View>
 
         <View style={styles.helpBox}>
-          <Ionicons name="help-circle-outline" size={20} color={colors.primary[500]} />
+          <Ionicons name="information-circle-outline" size={20} color={colors.primary[500]} />
           <Text style={styles.helpText}>
-            ¿No encuentras el código? Revisa la parte trasera del dispositivo o el manual incluido en la caja.
+            El código tiene entre 6-20 caracteres (solo letras y números). Lo encuentras en la caja del dispositivo o en el panel web de administración.
           </Text>
         </View>
       </Card>
@@ -870,6 +875,24 @@ const styles = StyleSheet.create({
   deviceIconContainer: {
     alignItems: 'center',
     marginBottom: spacing.lg,
+  },
+  codeExampleBox: {
+    backgroundColor: colors.primary[100],
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  codeExampleLabel: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    marginBottom: spacing.xs,
+  },
+  codeExampleValue: {
+    ...typography.body,
+    fontWeight: '700',
+    color: colors.primary[700],
+    letterSpacing: 1,
   },
   deviceCodeInput: {
     textAlign: 'center',
