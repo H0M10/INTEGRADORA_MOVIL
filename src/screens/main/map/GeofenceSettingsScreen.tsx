@@ -14,7 +14,7 @@ import {
   Dimensions,
   TextInput,
 } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MapStackParamList } from '../../../types/navigation';
@@ -186,7 +186,6 @@ export const GeofenceSettingsScreen: React.FC<GeofenceSettingsScreenProps> = ({
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
         initialRegion={{
           latitude: config.map.defaultLocation.latitude,
           longitude: config.map.defaultLocation.longitude,

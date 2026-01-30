@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
@@ -207,7 +207,6 @@ export const LocationHistoryScreen: React.FC<LocationHistoryScreenProps> = ({
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
         showsUserLocation
         showsMyLocationButton={false}
       >

@@ -15,7 +15,7 @@ import {
   Share,
   Platform,
 } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -249,7 +249,6 @@ export const MapScreen: React.FC<MapScreenProps> = ({ navigation }) => {
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
         initialRegion={{
           latitude: realLocation?.latitude || config.map.defaultLocation.latitude,
           longitude: realLocation?.longitude || config.map.defaultLocation.longitude,
