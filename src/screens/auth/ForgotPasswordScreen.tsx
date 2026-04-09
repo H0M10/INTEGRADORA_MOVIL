@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // NOVAGUARDIAN - Pantalla Olvidé mi Contraseña
-// Recuperación de contraseña por email
+// Recuperación de contraseña por email y restablecimiento
 // ═══════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
@@ -41,14 +41,21 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
-  const { forgotPassword } = useAuthStore();
+  const { forgotPassword, resetPassword } = useAuthStore();
   
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  
   const [emailError, setEmailError] = useState('');
+  const [codeError, setCodeError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [attempts, setAttempts] = useState(0);
 
-  // Validación
+  // Validación de email
   const validateEmail = (): boolean => {
     if (!email.trim()) {
       setEmailError('El correo electrónico es requerido');
@@ -62,14 +69,41 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     return true;
   };
 
-  // Handler de recuperación
-  const handleResetPassword = async () => {
+  // Validación de código y contraseña
+  const validateStep2 = (): boolean => {
+    let isValid = true;
+    if (!code || code.length !== 6) {
+      setCodeError('El código debe tener 6 dígitos');
+      isValid = false;
+    } else {
+      setCodeError('');
+    }
+
+    if (!newPassword) {
+      setPasswordError('La nueva contraseña es requerida');
+      isValid = false;
+    } else if (newPassword.length < 8) {
+      setPasswordError('La contraseña debe tener al menos 8 caracteres');
+      isValid = false;
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      setPasswordError('Incluye mayúsculas, minúsculas y números');
+      isValid = false;
+    } else {
+      setPasswordError('');
+    }
+
+    return isValid;
+  };
+
+  // Enviar email
+  const handleSendEmail = async () => {
     if (!validateEmail()) return;
 
     setIsLoading(true);
     try {
       await forgotPassword(email.trim().toLowerCase());
-      setIsSuccess(true);
+      setStep(2);
+      setAttempts(0);
     } catch (error: any) {
       Alert.alert(
         'Error',
@@ -80,8 +114,33 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     }
   };
 
-  // Vista de éxito
-  if (isSuccess) {
+  // Resetear contraseña
+  const handleResetPassword = async () => {
+    if (!validateStep2()) return;
+
+    if (attempts >= 3) {
+      Alert.alert('Acceso bloqueado', 'Has excedido el número de intentos permitidos.');
+      setStep(1);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await resetPassword(code, newPassword);
+      setStep(3);
+    } catch (error: any) {
+      setAttempts(prev => prev + 1);
+      Alert.alert(
+        'Error al restablecer',
+        error.message || 'El código es inválido o expiró. Intenta de nuevo.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Vista de éxito final
+  if (step === 3) {
     return (
       <View style={styles.container}>
         <LinearGradient
@@ -90,15 +149,11 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
         >
           <View style={styles.successContent}>
             <View style={styles.successIcon}>
-              <Ionicons name="mail-outline" size={64} color={colors.text.inverse} />
+              <Ionicons name="checkmark-circle-outline" size={64} color={colors.text.inverse} />
             </View>
-            <Text style={styles.successTitle}>¡Correo enviado!</Text>
+            <Text style={styles.successTitle}>¡Contraseña actualizada!</Text>
             <Text style={styles.successMessage}>
-              Hemos enviado un enlace de recuperación a{'\n'}
-              <Text style={styles.successEmail}>{email}</Text>
-            </Text>
-            <Text style={styles.successHint}>
-              Revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contraseña.
+              Tu contraseña ha sido restablecida exitosamente.
             </Text>
             
             <Button
@@ -108,15 +163,6 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
               fullWidth
               style={styles.successButton}
             />
-            
-            <TouchableOpacity
-              style={styles.resendButton}
-              onPress={() => setIsSuccess(false)}
-            >
-              <Text style={styles.resendText}>
-                ¿No recibiste el correo? Intenta de nuevo
-              </Text>
-            </TouchableOpacity>
           </View>
         </LinearGradient>
       </View>
@@ -128,31 +174,31 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Header con gradiente */}
       <LinearGradient
         colors={[colors.primary[500], colors.primary[700]]}
         style={[styles.header, { paddingTop: insets.top + spacing.md }]}
       >
-        {/* Botón atrás */}
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => step === 2 ? setStep(1) : navigation.goBack()}
         >
           <Ionicons name="chevron-back" size={28} color={colors.text.inverse} />
         </TouchableOpacity>
 
-        {/* Icono */}
         <View style={styles.headerIcon}>
-          <Ionicons name="key-outline" size={48} color={colors.text.inverse} />
+          <Ionicons name={step === 1 ? "key-outline" : "lock-open-outline"} size={48} color={colors.text.inverse} />
         </View>
 
-        <Text style={styles.headerTitle}>¿Olvidaste tu contraseña?</Text>
+        <Text style={styles.headerTitle}>
+          {step === 1 ? '¿Olvidaste tu contraseña?' : 'Restablecer contraseña'}
+        </Text>
         <Text style={styles.headerSubtitle}>
-          No te preocupes, te ayudamos a recuperarla
+          {step === 1 
+            ? 'Te enviaremos un código de recuperación' 
+            : `Ingresa el código enviado a ${email}`}
         </Text>
       </LinearGradient>
 
-      {/* Formulario */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
@@ -160,51 +206,84 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <Card variant="elevated" style={styles.formCard}>
-          <Text style={styles.instructions}>
-            Ingresa el correo electrónico asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
-          </Text>
-
-          {/* Campo de email */}
-          <Input
-            label="Correo electrónico"
-            placeholder="ejemplo@correo.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            leftIcon="mail-outline"
-            error={emailError}
-          />
-
-          {/* Botón de enviar */}
-          <Button
-            title="Enviar enlace de recuperación"
-            onPress={handleResetPassword}
-            loading={isLoading}
-            disabled={isLoading}
-            size="lg"
-            fullWidth
-            gradient
-            style={styles.submitButton}
-          />
+          {step === 1 ? (
+            <>
+              <Text style={styles.instructions}>
+                Ingresa tu correo electrónico asociado a la cuenta.
+              </Text>
+              <Input
+                label="Correo electrónico"
+                placeholder="ejemplo@correo.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                leftIcon="mail-outline"
+                error={emailError}
+              />
+              <Button
+                title="Enviar código"
+                onPress={handleSendEmail}
+                loading={isLoading}
+                disabled={isLoading}
+                size="lg"
+                fullWidth
+                gradient
+                style={styles.submitButton}
+              />
+            </>
+          ) : (
+            <>
+              <Text style={styles.instructions}>
+                Ingresa el código de 6 dígitos y tu nueva contraseña. Caduca en 15 minutos.
+              </Text>
+              <Input
+                label="Código de verificación"
+                placeholder="000000"
+                value={code}
+                onChangeText={(v) => setCode(v.replace(/[^0-9]/g, '').slice(0,6))}
+                keyboardType="number-pad"
+                leftIcon="keypad-outline"
+                error={codeError}
+              />
+              <Input
+                label="Nueva Contraseña"
+                placeholder="••••••••"
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+                leftIcon="lock-closed-outline"
+                error={passwordError}
+                hint="Mínimo 8 caracteres, mayúsculas, minúsculas y números"
+              />
+              {attempts > 0 && (
+                <Text style={styles.attemptsText}>
+                  Intentos fallidos: {attempts}/3
+                </Text>
+              )}
+              <Button
+                title="Actualizar contraseña"
+                onPress={handleResetPassword}
+                loading={isLoading}
+                disabled={isLoading}
+                size="lg"
+                fullWidth
+                gradient
+                style={styles.submitButton}
+              />
+            </>
+          )}
         </Card>
 
-        {/* Ayuda adicional */}
-        <View style={styles.helpContainer}>
-          <Text style={styles.helpText}>
-            Si no encuentras el correo, revisa tu carpeta de spam o correo no deseado.
-          </Text>
-        </View>
-
-        {/* Volver a login */}
-        <TouchableOpacity
-          style={styles.backToLogin}
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.primary[500]} />
-          <Text style={styles.backToLoginText}>Volver al inicio de sesión</Text>
-        </TouchableOpacity>
+        {step === 1 && (
+          <TouchableOpacity
+            style={styles.backToLogin}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Ionicons name="arrow-back" size={20} color={colors.primary[500]} />
+            <Text style={styles.backToLoginText}>Volver al inicio de sesión</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -276,16 +355,11 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: spacing.lg,
   },
-  helpContainer: {
-    backgroundColor: colors.background.secondary,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginTop: spacing.lg,
-  },
-  helpText: {
-    ...typography.bodySmall,
-    color: colors.text.tertiary,
+  attemptsText: {
+    ...typography.caption,
+    color: colors.status.error,
     textAlign: 'center',
+    marginTop: spacing.sm,
   },
   backToLogin: {
     flexDirection: 'row',
@@ -299,7 +373,6 @@ const styles = StyleSheet.create({
     color: colors.primary[500],
     marginLeft: spacing.sm,
   },
-  // Estilos de éxito
   successContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -326,29 +399,11 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  successEmail: {
-    fontWeight: '700',
-  },
-  successHint: {
-    ...typography.bodySmall,
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
     marginBottom: spacing.xxl,
-    paddingHorizontal: spacing.md,
   },
   successButton: {
     backgroundColor: colors.text.inverse,
     marginBottom: spacing.lg,
-  },
-  resendButton: {
-    padding: spacing.md,
-  },
-  resendText: {
-    ...typography.bodySmall,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textDecorationLine: 'underline',
   },
 });
 

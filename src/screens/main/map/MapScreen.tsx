@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // NOVAGUARDIAN - Pantalla Mapa
 // Visualización de ubicación GPS REAL en tiempo real
+// USA MAPA NATIVO DE ANDROID (GRATIS, SIN API KEY)
 // ═══════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -227,6 +228,19 @@ export const MapScreen: React.FC<MapScreenProps> = ({ navigation }) => {
     },
   ] : [];
 
+  // Pantalla de carga mientras se obtienen permisos/ubicación
+  if (isLoading || permissionStatus === 'checking') {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Loading size="lg" color={colors.primary[500]} />
+        <Text style={[styles.errorTitle, { marginTop: spacing.base }]}>Obteniendo ubicación...</Text>
+        <Text style={styles.errorMessage}>
+          Por favor espera mientras accedemos al GPS
+        </Text>
+      </View>
+    );
+  }
+
   // Pantalla de error de permisos
   if (permissionStatus === 'denied') {
     return (
@@ -243,15 +257,31 @@ export const MapScreen: React.FC<MapScreenProps> = ({ navigation }) => {
     );
   }
 
+  // Si no hay ubicación aún, mostrar pantalla de espera
+  if (!realLocation) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Ionicons name="navigate-outline" size={64} color={colors.primary[500]} />
+        <Text style={styles.errorTitle}>Buscando señal GPS</Text>
+        <Text style={styles.errorMessage}>
+          Asegúrate de estar en un lugar con buena recepción de GPS
+        </Text>
+        <TouchableOpacity style={styles.retryButton} onPress={initializeLocation}>
+          <Text style={styles.retryButtonText}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Mapa con ubicación REAL */}
+      {/* Mapa NATIVO de Android - GRATIS sin API Key */}
       <MapView
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: realLocation?.latitude || config.map.defaultLocation.latitude,
-          longitude: realLocation?.longitude || config.map.defaultLocation.longitude,
+          latitude: realLocation.latitude,
+          longitude: realLocation.longitude,
           latitudeDelta: 0.005,
           longitudeDelta: 0.005,
         }}
@@ -260,6 +290,9 @@ export const MapScreen: React.FC<MapScreenProps> = ({ navigation }) => {
         showsCompass={true}
         toolbarEnabled={false}
         onPanDrag={() => setIsFollowing(false)} // Desactivar seguimiento si el usuario mueve el mapa
+        onMapReady={() => {
+          console.log('✅ Mapa nativo cargado correctamente');
+        }}
       >
         {/* Marcador de ubicación REAL del teléfono (persona monitoreada) */}
         {realLocation && (

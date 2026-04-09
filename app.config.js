@@ -1,4 +1,4 @@
-// Dynamic Expo config
+// Dynamic Expo config - SIN Google Maps API Key (usa mapa nativo gratis)
 const IS_EAS_BUILD = process.env.EAS_BUILD === 'true';
 
 module.exports = {
@@ -50,8 +50,6 @@ module.exports = {
       ],
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false
-      // googleServicesFile comentado temporalmente - se agregará después
-      // googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json"
     },
     web: {
       favicon: "./assets/favicon.png"
