@@ -118,8 +118,10 @@ export const authService = {
   /**
    * Solicitar recuperación de contraseña
    */
-  forgotPassword: async (email: string): Promise<void> => {
-    await api.post('/auth/forgot-password', { email });
+  forgotPassword: async (email: string): Promise<any> => {
+    const response = await api.post<any>('/auth/forgot-password', { email });
+    const data = response.data?.data || response.data;
+    return data;
   },
 
   /**

@@ -141,9 +141,9 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation
               label="Teléfono (opcional)"
               value={formData.phone}
               onChangeText={(text) => handleInputChange('phone', text)}
-              placeholder="10 dígitos"
+              placeholder="Ej: +521234567890"
               keyboardType="phone-pad"
-              maxLength={10}
+              maxLength={15}
             />
           </Card>
 

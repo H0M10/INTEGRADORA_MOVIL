@@ -101,9 +101,20 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
 
     setIsLoading(true);
     try {
-      await forgotPassword(email.trim().toLowerCase());
+      const result = await forgotPassword(email.trim().toLowerCase());
       setStep(2);
       setAttempts(0);
+      
+      // En desarrollo: mostrar el código si el email no se envió 
+      if (result?.devCode) {
+        setTimeout(() => {
+          Alert.alert(
+            '🔑 Código de desarrollo',
+            `Tu código de recuperación es:\n\n${result.devCode}\n\n(El servidor SMTP no está configurado, se muestra aquí para pruebas)`,
+            [{ text: 'OK' }]
+          );
+        }, 500);
+      }
     } catch (error: any) {
       Alert.alert(
         'Error',

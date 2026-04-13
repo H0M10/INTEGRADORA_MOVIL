@@ -338,9 +338,46 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
             </View>
             <Text style={styles.termsText}>
               Acepto los{' '}
-              <Text style={styles.termsLink}>Términos y Condiciones</Text>
+              <Text
+                style={styles.termsLink}
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  Alert.alert(
+                    'Términos y Condiciones',
+                    'Al usar NovaGuardian aceptas que:\n\n' +
+                    '• La App es informativa y NO sustituye atención médica profesional.\n' +
+                    '• Tus datos de salud se cifran y protegen conforme a la LFPDPPP.\n' +
+                    '• Las alertas son orientativas; en emergencias llama al 911.\n' +
+                    '• Eres responsable de mantener seguras tus credenciales.\n' +
+                    '• NovaGuardian no garantiza disponibilidad ininterrumpida.\n' +
+                    '• Puedes solicitar eliminación de tu cuenta en cualquier momento.\n\n' +
+                    'Consulta los términos completos en Perfil > Acerca de > Términos.',
+                    [{ text: 'Entendido', style: 'default' }]
+                  );
+                }}
+              >
+                Términos y Condiciones
+              </Text>
               {' '}y la{' '}
-              <Text style={styles.termsLink}>Política de Privacidad</Text>
+              <Text
+                style={styles.termsLink}
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  Alert.alert(
+                    'Política de Privacidad',
+                    'NovaGuardian protege tu información personal:\n\n' +
+                    '• Recopilamos solo los datos necesarios para el servicio.\n' +
+                    '• Los datos de salud se cifran con estándares AES-256.\n' +
+                    '• No compartimos datos con terceros sin tu consentimiento.\n' +
+                    '• Cumplimos con la Ley Federal de Protección de Datos.\n' +
+                    '• Puedes solicitar acceso, rectificación o cancelación de tus datos.\n\n' +
+                    'Consulta la política completa en Perfil > Acerca de > Privacidad.',
+                    [{ text: 'Entendido', style: 'default' }]
+                  );
+                }}
+              >
+                Política de Privacidad
+              </Text>
             </Text>
           </TouchableOpacity>
           {errors.terms && (

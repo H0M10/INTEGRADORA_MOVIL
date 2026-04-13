@@ -238,8 +238,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      await authService.forgotPassword(email);
+      const result = await authService.forgotPassword(email);
       set({ isLoading: false });
+      return result;
     } catch (error: any) {
       set({
         isLoading: false,
