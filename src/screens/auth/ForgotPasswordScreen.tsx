@@ -183,7 +183,8 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <LinearGradient
         colors={[colors.primary[500], colors.primary[700]]}
@@ -242,6 +243,12 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
                 gradient
                 style={styles.submitButton}
               />
+              <TouchableOpacity
+                style={styles.haveCodeButton}
+                onPress={() => setStep(2)}
+              >
+                <Text style={styles.haveCodeText}>Ya tengo un código de recuperación</Text>
+              </TouchableOpacity>
             </>
           ) : (
             <>
@@ -370,7 +377,17 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.status.error,
     textAlign: 'center',
-    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  haveCodeButton: {
+    marginTop: spacing.md,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  haveCodeText: {
+    ...typography.button,
+    color: colors.primary[600],
+    textDecorationLine: 'underline',
   },
   backToLogin: {
     flexDirection: 'row',
