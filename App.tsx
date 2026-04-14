@@ -76,7 +76,7 @@ export default function App() {
     }
   }, [appIsReady]);
 
-  if (!appIsReady || isLoading) {
+  if (!appIsReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary[500]} />
